@@ -13,6 +13,7 @@
 8. [Comprehensive Test Plan](#8-comprehensive-test-plan)
 9. [Detailed Test Cases (SQA)](#9-detailed-test-cases-sqa)
 10. [Setup & Installation Instructions](#10-setup--installation-instructions)
+11. [Associated Documents](#11-associated-documents)
 
 ---
 
@@ -34,32 +35,32 @@ The application strictly enforces separation of concerns through three distinct 
 
 ```mermaid
 flowchart TD
-    subgraph Presentation Layer [Console UI]
+    subgraph PL [Presentation Layer / Console UI]
         Program[Program.cs]
         Helpers[SearchHelper.cs]
     end
 
-    subgraph Business Logic Layer [BLL - Services]
+    subgraph BLL [Business Logic Layer / Services]
         UserService[UserService.cs]
         OrderService[OrderService.cs]
         ProductService[ProductService.cs]
         InventoryService[InventoryService.cs]
     end
 
-    subgraph Data Access Layer [DAL - Repositories]
+    subgraph DAL [Data Access Layer / Repositories]
         UserDAL[UserDAL.cs]
         OrderDAL[OrderDAL.cs]
         ProductDAL[ProductDAL.cs]
         InventoryDAL[InventoryDAL.cs]
     end
 
-    subgraph Database [MS SQL LocalDB]
+    subgraph DB [Database / MS SQL LocalDB]
         SQL[(CoffeeHavenDB)]
     end
 
-    Presentation Layer -->|Interface Calls| Business Logic Layer
-    Business Logic Layer -->|Interface Calls| Data Access Layer
-    Data Access Layer -->|ADO.NET / SQL| Database
+    PL -->|Interface Calls| BLL
+    BLL -->|Interface Calls| DAL
+    DAL -->|ADO.NET SQL| DB
 ```
 
 ### 2.1 Layer Responsibilities
@@ -163,6 +164,72 @@ sequenceDiagram
     Customer->>OrderBLL: Credit Card + Success
     OrderBLL->>InvDAL: DeductStock(Id, Qty)
     InvDAL->>DB: UPDATE MenuItems SET StockQuantity = StockQuantity - Qty
+```
+
+### 5.3 Complete Admin Modules Workflow
+```mermaid
+flowchart TD
+    AdminDashboard["ADMIN DASHBOARD"]
+    
+    AdminDashboard --> O["1. Order Management"]
+    AdminDashboard --> P["2. Product Management"]
+    AdminDashboard --> I["3. Inventory Management"]
+    AdminDashboard --> C["4. Customer Management"]
+    AdminDashboard --> S["5. Settings (Profile)"]
+    AdminDashboard --> L["6. Logout"]
+
+    O --> O1["View Active Orders"]
+    O --> O2["Process/Update Order Status"]
+    O --> O3["Search Order History"]
+
+    P --> P1["View All Products"]
+    P --> P2["Search Products"]
+    P --> P3["Add New Product"]
+    P --> P4["Update Existing Product"]
+    P --> P5["Soft-Delete Product (Make Inactive)"]
+
+    I --> I1["View Low Stock (Threshold based)"]
+    I --> I2["Search Inventory Ledger"]
+    I --> I3["Restock Item (Add Qty)"]
+
+    C --> C1["View All Users"]
+    C --> C2["Search / Filter by Role"]
+    C --> C3["Add New User (Admin/Customer)"]
+    C --> C4["Update User Details"]
+    C --> C5["Force Delete User"]
+
+    S --> S1["Update Own Name"]
+    S --> S2["Update Own Email"]
+    S --> S3["Change Own Password"]
+    S --> S4["Delete Own Account"]
+```
+
+### 5.4 Complete Customer Modules Workflow
+```mermaid
+flowchart TD
+    CustDashboard["CUSTOMER DASHBOARD"]
+
+    CustDashboard --> S["1. Shop (Order Management)"]
+    CustDashboard --> P["2. My Profile (Settings)"]
+    CustDashboard --> L["3. Logout"]
+
+    S --> S1["Browse Menu"]
+    S --> S2["Search Products by Keyword"]
+    S --> S3["Single Item Quick Checkout"]
+    S --> S4["Cart Checkout (Multi-item)"]
+    S --> S5["View Personal Order History"]
+    S --> S6["Search Personal Orders"]
+    S --> S7["Cancel Processing Order"]
+
+    S4 --> C1["Add Item to Cart"]
+    S4 --> C2["Remove Item from Cart"]
+    S4 --> C3["Proceed to Simulated Payment"]
+
+    P --> P1["View Profile Stats (Points, Role)"]
+    P --> P2["Update Name"]
+    P --> P3["Update Email"]
+    P --> P4["Change Password"]
+    P --> P5["Self-Delete Account"]
 ```
 
 ---
@@ -325,6 +392,17 @@ If the SQL scripts were seeded natively, the following accounts exist dynamicall
 If you encounter `SqlException` triggers:
 1. Verify the `AppDomain.CurrentDomain.SetData("DataDirectory", ...);` string is actively bridging the `.mdf` file stringly referenced in the `DAL` classes.
 2. Confirm you executed `SQLQuery3_AddRole.sql`. If columns are missing, standard queries throwing `Invalid Column Name` will appear on the terminal feedback string.
+
+---
+
+## 11. Associated Documents
+
+*Please attach or link relevant collaborative documents here:*
+
+- **Project Kick-off & Master Plan**: [Insert Google Docs Link Here]
+- **Design Mockups**: [Insert Design Link Here]
+- **Test Execution Reports**: [Insert Testing Spreadsheet Here]
+- **Meeting Notes**: [Insert Notes Link Here]
 
 ---
 *Coffee Haven Enterprise: Developed internally for optimal performance, scalability, and console-environment reliability.*
