@@ -428,7 +428,7 @@ If you encounter `SqlException` triggers:
 
 _Please attach or link relevant collaborative documents here:_
 
-- **Project Documentation GoogleDocs File**: [[Click me](https://docs.google.com/document/d/12uixH9_1oMVT-7_ZZ3e9d-J6t6gbToQqs0qFqkdSu30/edit?usp=sharing)]
+- **Project Documentation GoogleDocs File**: [[Click me](https://docs.google.com/document/d/1k5GoDZFHv7xXIZdgLllzr0vfuxdOPcFOOT3LOgS01gw/edit?usp=sharing)]
 
 ---
 
