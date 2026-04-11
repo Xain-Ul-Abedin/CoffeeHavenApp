@@ -8,9 +8,9 @@ namespace CoffeeHavenApp.Testing
 {
     public static class TestRunner
     {
-        public static void RunAll()
+        public static bool RunAll(bool isCi = false)
         {
-            Console.Clear();
+            if (!isCi) Console.Clear();
             Console.WriteLine("============================================================");
             Console.WriteLine("      COFFEE HAVEN - SYSTEM VERIFICATION MODULE             ");
             Console.WriteLine("============================================================");
@@ -78,14 +78,18 @@ namespace CoffeeHavenApp.Testing
                 Console.WriteLine();
             }
 
-            PrintSummary(results);
+            int failures = PrintSummary(results);
             
             Console.WriteLine("\n[DEBUG] Verification Complete. Using Mock/Sandbox data environment.");
+            
+            if (isCi) return failures == 0;
+
             Console.WriteLine("Press any key to return to main menu...");
             Console.ReadKey();
+            return failures == 0;
         }
 
-        private static void PrintSummary(List<SuiteResult> results)
+        private static int PrintSummary(List<SuiteResult> results)
         {
             Console.WriteLine("============================================================");
             Console.WriteLine("                  VERIFICATION SUMMARY                      ");
@@ -115,6 +119,7 @@ namespace CoffeeHavenApp.Testing
             Console.WriteLine($"FAILED      : {totalFailed}");
             Console.ResetColor();
             Console.WriteLine("============================================================");
+            return totalFailed;
         }
     }
 }

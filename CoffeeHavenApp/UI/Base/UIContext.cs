@@ -9,6 +9,7 @@ namespace CoffeeHavenApp.UI.Base
         public IProductService ProductService { get; }
         public IOrderService OrderService { get; }
         public IInventoryService InventoryService { get; }
+        public IReportService ReportService { get; }
         public Session Session { get; }
 
         public UIContext(
@@ -16,12 +17,14 @@ namespace CoffeeHavenApp.UI.Base
             IProductService productService,
             IOrderService orderService,
             IInventoryService inventoryService,
+            IReportService reportService,
             Session session)
         {
             UserService = userService;
             ProductService = productService;
             OrderService = orderService;
             InventoryService = inventoryService;
+            ReportService = reportService;
             Session = session;
         }
     }

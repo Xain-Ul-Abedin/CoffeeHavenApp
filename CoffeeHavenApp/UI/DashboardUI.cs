@@ -29,8 +29,9 @@ namespace CoffeeHavenApp.UI
                 Console.WriteLine(" 2. Product Management");
                 Console.WriteLine(" 3. Inventory Management");
                 Console.WriteLine(" 4. Customer Management");
-                Console.WriteLine(" 5. Settings");
-                Console.WriteLine(" 6. Logout");
+                Console.WriteLine(" 5. Reports");
+                Console.WriteLine(" 6. Settings");
+                Console.WriteLine(" 7. Logout");
 
                 string choice = ConsoleHelper.Prompt("Selection");
 
@@ -49,9 +50,12 @@ namespace CoffeeHavenApp.UI
                         CustomerManagementUI.ShowCustomerManagementMenu(context);
                         break;
                     case "5":
-                        if (ProfileUI.ShowProfileMenu(context)) return;
+                        ReportsUI.ShowReportsMenu(context);
                         break;
                     case "6":
+                        if (ProfileUI.ShowProfileMenu(context)) return;
+                        break;
+                    case "7":
                         if (ConfirmLogout(context)) return;
                         break;
                     default:
