@@ -1,4 +1,4 @@
-﻿using CoffeeHavenDB.Models;
+using CoffeeHavenDB.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -23,19 +23,20 @@ namespace CoffeeHavenApp.Helpers
         /// </summary>
         public static List<Product> SearchProducts(List<Product> products, string searchTerm)
         {
-            if (products == null || products.Count == 0)
-                return new List<Product>();
-
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                return products;
+            if (products == null || products.Count == 0) return new List<Product>();
+            if (string.IsNullOrWhiteSpace(searchTerm)) return products;
 
             string term = searchTerm.Trim().ToLowerInvariant();
-
             return products
-                .Where(p =>
-                    (!string.IsNullOrEmpty(p.ProductName) && p.ProductName.ToLowerInvariant().Contains(term)) ||
-                    (!string.IsNullOrEmpty(p.Description) && p.Description.ToLowerInvariant().Contains(term)))
+                .Where(p => (p.ProductName?.ToLowerInvariant().Contains(term) ?? false) || 
+                            (p.Description?.ToLowerInvariant().Contains(term) ?? false))
                 .ToList();
+        }
+
+        public static List<Product> SearchProductsById(List<Product> products, int id)
+        {
+            if (products == null) return new List<Product>();
+            return products.Where(p => p.ProductId == id).ToList();
         }
 
         /// <summary>
@@ -221,6 +222,11 @@ namespace CoffeeHavenApp.Helpers
             }
 
             return result;
+        }
+
+        public static DataTable FilterByStatus(DataTable table, string status)
+        {
+             return FilterDataTableByColumn(table, "Status", status);
         }
     }
 }

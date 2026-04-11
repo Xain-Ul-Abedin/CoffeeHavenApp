@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using CoffeeHavenDB.Interfaces;
@@ -27,7 +27,7 @@ namespace CoffeeHavenApp.Services
         /// <summary>
         /// Place a single item order with inventory validation.
         /// </summary>
-        public void PlaceOrder(int userId, int itemId, int quantity)
+        public void PlaceOrder(int userId, int itemId, int quantity, string paymentMethod)
         {
             Console.WriteLine($"[BLL] Order Request: User {userId} wants {quantity} of Item {itemId}");
 
@@ -38,7 +38,7 @@ namespace CoffeeHavenApp.Services
                 _productService.ReduceStock(itemId, quantity);
 
                 // 3. [DAL] Proceed to save the order record
-                _orderRepository.PlaceOrder(userId, itemId, quantity);
+                _orderRepository.PlaceOrder(userId, itemId, quantity, paymentMethod);
 
                 Console.WriteLine("[BLL] Transaction Complete: Order placed and stock adjusted.");
             }
@@ -51,7 +51,7 @@ namespace CoffeeHavenApp.Services
         /// <summary>
         /// Place a multi-item order (Shopping Cart) with "All-or-Nothing" validation.
         /// </summary>
-        public void PlaceOrder(int userId, Dictionary<int, int> itemsToOrder)
+        public void PlaceOrder(int userId, Dictionary<int, int> itemsToOrder, string paymentMethod)
         {
             Console.WriteLine("[BLL] Processing Bulk Order Request...");
             bool canProceed = true;
@@ -76,7 +76,7 @@ namespace CoffeeHavenApp.Services
                 }
 
                 // 3. [DAL] Record the bulk transaction
-                _orderRepository.PlaceOrder(userId, itemsToOrder);
+                _orderRepository.PlaceOrder(userId, itemsToOrder, paymentMethod);
                 Console.WriteLine("[BLL] Bulk Transaction Complete.");
             }
             else
@@ -97,9 +97,26 @@ namespace CoffeeHavenApp.Services
             Console.WriteLine("[BLL] Order cancellation logic completed.");
         }
 
+        public void UpdateOrderStatus(int orderId, string status)
+        {
+            Console.WriteLine($"[BLL] Updating Order #{orderId} to status: {status}");
+            _orderRepository.UpdateOrderStatus(orderId, status);
+        }
+
+        public void ClearUserOrderHistory(int userId)
+        {
+            Console.WriteLine($"[BLL] Clearing history for User {userId}");
+            _orderRepository.ClearUserOrderHistory(userId);
+        }
+
         public DataTable GetUserOrderHistory(int userId)
         {
             return _orderRepository.GetUserOrderHistory(userId);
+        }
+
+        public DataTable GetAllOrders()
+        {
+            return _orderRepository.GetAllOrders();
         }
     }
 }

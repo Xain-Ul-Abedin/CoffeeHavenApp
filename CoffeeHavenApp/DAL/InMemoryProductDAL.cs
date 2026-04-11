@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CoffeeHavenDB.Models;
@@ -11,6 +11,11 @@ namespace CoffeeHavenDB.DAL
     public class InMemoryProductDAL : IProductRepository
     {
         private List<Product> _products = new List<Product>();
+
+        public void Reset()
+        {
+            _products.Clear();
+        }
 
         public void AddProduct(Product product)
         {

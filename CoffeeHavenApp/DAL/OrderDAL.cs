@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
@@ -14,19 +14,39 @@ namespace CoffeeHavenDB
     {
         private readonly string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\CoffeeHavenDB.mdf;Initial Catalog=CoffeeHavenDB;Integrated Security=True;Encrypt=False";
 
+        public OrderDAL()
+        {
+            EnsureSchema();
+        }
+
+        private void EnsureSchema()
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                con.Open();
+                string checkPM = "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Orders') AND name = 'PaymentMethod') " +
+                                 "ALTER TABLE Orders ADD PaymentMethod NVARCHAR(50) DEFAULT 'Not Specified';";
+                using (SqlCommand cmd = new SqlCommand(checkPM, con)) { cmd.ExecuteNonQuery(); }
+
+                string checkStatus = "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Orders') AND name = 'Status') " +
+                                     "ALTER TABLE Orders ADD Status NVARCHAR(50) DEFAULT 'Completed';";
+                using (SqlCommand cmd = new SqlCommand(checkStatus, con)) { cmd.ExecuteNonQuery(); }
+            }
+        }
+
         // ============================================================
         // PLACE ORDER (Single Item Overload)
         // ============================================================
-        public void PlaceOrder(int userId, int itemId, int quantity)
+        public void PlaceOrder(int userId, int itemId, int quantity, string paymentMethod)
         {
             var cart = new Dictionary<int, int> { { itemId, quantity } };
-            PlaceOrder(userId, cart);
+            PlaceOrder(userId, cart, paymentMethod);
         }
 
         // ============================================================
         // PLACE ORDER (Multi-Item Shopping Cart Transaction)
         // ============================================================
-        public void PlaceOrder(int userId, Dictionary<int, int> itemsToOrder)
+        public void PlaceOrder(int userId, Dictionary<int, int> itemsToOrder, string paymentMethod)
         {
             if (itemsToOrder == null || itemsToOrder.Count == 0)
                 throw new Exception("Shopping cart is empty.");
@@ -79,12 +99,13 @@ namespace CoffeeHavenDB
                     }
 
                     // 3. Insert Parent Order
-                    string orderQuery = @"INSERT INTO Orders (UserID, OrderDate, TotalAmount) 
+                    string orderQuery = @"INSERT INTO Orders (UserID, OrderDate, TotalAmount, Status, PaymentMethod) 
                                        OUTPUT INSERTED.OrderID 
-                                       VALUES (@uId, GETDATE(), @total)";
+                                       VALUES (@uId, GETDATE(), @total, 'Pending', @pay)";
                     SqlCommand cmdOrder = new SqlCommand(orderQuery, con, trans);
                     cmdOrder.Parameters.AddWithValue("@uId", userId);
                     cmdOrder.Parameters.AddWithValue("@total", grandTotal);
+                    cmdOrder.Parameters.AddWithValue("@pay", paymentMethod);
 
                     int newOrderId = Convert.ToInt32(cmdOrder.ExecuteScalar());
 
@@ -150,14 +171,16 @@ namespace CoffeeHavenDB
                         cmdRes.ExecuteNonQuery();
                     }
 
-                    // 3. Delete Records (OrderItems first, then Orders)
-                    new SqlCommand($"DELETE FROM OrderItems WHERE OrderID = {orderId}", con, trans).ExecuteNonQuery();
-                    int rows = new SqlCommand($"DELETE FROM Orders WHERE OrderID = {orderId}", con, trans).ExecuteNonQuery();
+                    // 3. Mark as Cancelled (Soft Delete)
+                    string cancelQuery = "UPDATE Orders SET Status = 'Cancelled' WHERE OrderID = @oId";
+                    SqlCommand cmdCancel = new SqlCommand(cancelQuery, con, trans);
+                    cmdCancel.Parameters.AddWithValue("@oId", orderId);
+                    int rows = cmdCancel.ExecuteNonQuery();
 
                     if (rows > 0)
                     {
                         trans.Commit();
-                        Console.WriteLine($"\n[SUCCESS] Order #{orderId} cancelled. Inventory has been returned to stock.");
+                        Console.WriteLine($"\n[SUCCESS] Order #{orderId} status updated to 'Cancelled'. Inventory returned.");
                     }
                 }
                 catch (Exception ex) { trans.Rollback(); throw ex; }
@@ -169,7 +192,8 @@ namespace CoffeeHavenDB
             DataTable dt = new DataTable();
             using (SqlConnection con = new SqlConnection(connectionString))
             {
-                string query = @"SELECT o.OrderID, o.OrderDate, m.Name as ProductName, 
+                string query = @"SELECT o.OrderID, o.OrderDate, o.Status, o.PaymentMethod,
+                                 m.Name as ProductName, 
                                  oi.Quantity, oi.UnitPrice, oi.ItemSubtotal as SubTotal
                                  FROM Orders o 
                                  JOIN OrderItems oi ON o.OrderID = oi.OrderID 
@@ -177,6 +201,64 @@ namespace CoffeeHavenDB
                                  WHERE o.UserID = @uId ORDER BY o.OrderDate DESC";
                 SqlDataAdapter da = new SqlDataAdapter(query, con);
                 da.SelectCommand.Parameters.AddWithValue("@uId", userId);
+                try { da.Fill(dt); } catch { }
+            }
+            return dt;
+        }
+
+        public void UpdateOrderStatus(int orderId, string status)
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                con.Open();
+                string query = "UPDATE Orders SET Status = @status WHERE OrderID = @oId";
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.Parameters.AddWithValue("@status", status);
+                cmd.Parameters.AddWithValue("@oId", orderId);
+                int rows = cmd.ExecuteNonQuery();
+                if (rows > 0) Console.WriteLine($"\n[SUCCESS] Order #{orderId} updated to '{status}'.");
+                else throw new Exception("Order not found.");
+            }
+        }
+
+        public void ClearUserOrderHistory(int userId)
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                con.Open();
+                SqlTransaction trans = con.BeginTransaction();
+                try
+                {
+                    // 1. Delete OrderItems associated with User's Orders
+                    string delItems = "DELETE FROM OrderItems WHERE OrderID IN (SELECT OrderID FROM Orders WHERE UserID = @uId)";
+                    SqlCommand cmdDelItems = new SqlCommand(delItems, con, trans);
+                    cmdDelItems.Parameters.AddWithValue("@uId", userId);
+                    cmdDelItems.ExecuteNonQuery();
+
+                    // 2. Delete Orders
+                    string delOrders = "DELETE FROM Orders WHERE UserID = @uId";
+                    SqlCommand cmdDelOrders = new SqlCommand(delOrders, con, trans);
+                    cmdDelOrders.Parameters.AddWithValue("@uId", userId);
+                    int rows = cmdDelOrders.ExecuteNonQuery();
+
+                    trans.Commit();
+                    Console.WriteLine($"\n[SUCCESS] {rows} order records cleared from history.");
+                }
+                catch (Exception ex) { trans.Rollback(); throw ex; }
+            }
+        }
+
+        public DataTable GetAllOrders()
+        {
+            DataTable dt = new DataTable();
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                string query = @"SELECT o.OrderID, u.FullName as Customer, o.OrderDate, o.Status, o.PaymentMethod,
+                                 o.TotalAmount as GrantTotal
+                                 FROM Orders o 
+                                 JOIN Users u ON o.UserID = u.UserID 
+                                 ORDER BY o.OrderDate DESC";
+                SqlDataAdapter da = new SqlDataAdapter(query, con);
                 try { da.Fill(dt); } catch { }
             }
             return dt;

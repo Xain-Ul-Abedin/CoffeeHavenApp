@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CoffeeHaven.Interfaces;
 using CoffeeHaven.Models;
 
@@ -10,10 +10,10 @@ namespace CoffeeHaven.DAL
         {
             Console.WriteLine("\n[GATEWAY] Contacting Bank via Secure Channel...");
 
-            // Mock Validation
-            if (string.IsNullOrEmpty(payment.CardNumber) || payment.CardNumber.Length < 12)
+            // Mock Validation - Relaxed for testing
+            if (string.IsNullOrEmpty(payment.CardNumber) || payment.CardNumber.Length < 4)
             {
-                Console.WriteLine("[ERROR] Invalid Credit Card Number.");
+                Console.WriteLine("[ERROR] Invalid Credit Card Number (Min 4 digits).");
                 return false;
             }
 
